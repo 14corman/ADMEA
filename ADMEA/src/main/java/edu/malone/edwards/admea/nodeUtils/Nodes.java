@@ -96,7 +96,8 @@ public class Nodes extends THashMap<Long, Node> implements Serializable {
             tree.add(child);
             goodEdges.add(child);
             
-            for(Long n : tree)
+            Long[] treeNodes = tree.toArray(new Long[0]);
+            for(Long n : treeNodes)
             {
                 //If n == parent, then we hit a loop and are right back where we started.
                 if(n == parent)

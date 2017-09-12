@@ -45,13 +45,11 @@ import org.openide.util.Lookup;
 public class GraphBuilder
 {
     private final ProjectController pc;
-    private final Workspace workspace;
+    private Workspace workspace;
     
     private GraphBuilder()
     {
         pc = Lookup.getDefault().lookup(ProjectController.class);
-        pc.newProject();
-        workspace = pc.getCurrentWorkspace();
     }
     
     public static GraphBuilder getInstance()
@@ -66,6 +64,9 @@ public class GraphBuilder
     
     public synchronized void build(String filePath) throws Exception
     {
+        pc.newProject();
+        workspace = pc.getCurrentWorkspace();
+        
         GraphModel graphModel = Lookup.getDefault().lookup(GraphController.class).getGraphModel(workspace);
         PreviewModel model = Lookup.getDefault().lookup(PreviewController.class).getModel();
 
