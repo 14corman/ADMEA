@@ -35,6 +35,11 @@
             <type>jar</type>
         </dependency>
         <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>3.4.0</version>
+        </dependency> 
+        <dependency>
             <groupId>org.gephi</groupId>
             <artifactId>preview-api</artifactId>
             <version>0.9.1</version>

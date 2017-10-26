@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * 
  * @author Cory Edwards
  */
-public class Nodes extends THashMap<Long, Node> implements Serializable {
+public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
     
     //To keep track of which state has which Id.
     private final THashMap<State, Long> stateToId = new THashMap();

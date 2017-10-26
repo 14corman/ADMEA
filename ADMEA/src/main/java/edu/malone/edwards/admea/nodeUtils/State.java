@@ -11,10 +11,11 @@ import java.util.Arrays;
 /**
  *
  * @author Cory Edwards
+ * @param <K>
  */
 public class State<K> implements Serializable
 {
-    public K object;
+    public final K object;
     
     public State(K state)
     {

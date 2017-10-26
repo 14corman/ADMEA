@@ -25,15 +25,16 @@ import java.util.ArrayList;
  *          This way the programmer does not have to worry about that. Just have a shutdown method called.
  * 
  * @author Cory Edwards
+ * @param <K>
  */
-public abstract class ASystem {
+public abstract class ASystem<K extends State> {
     
     /**
      *A always existing list of all of the Nodes in the algorithm.
      *Analogous to a jar holding every Node, and the Nodes are free of each
      *other in the jar. 
      */
-    public static Nodes NODE_LIST = new Nodes();
+    private Nodes<K> nodeList = new Nodes();
     
     /**
      * Used to keep track of the last root Node that was used to update
@@ -96,7 +97,7 @@ public abstract class ASystem {
         }
         
         //Return the winning child's state.
-        return NODE_LIST.getNode(winningChild).getState();
+        return getNode(winningChild).getState();
     }
     
     /**
@@ -107,7 +108,7 @@ public abstract class ASystem {
      */
     private ArrayList<double[]> getScoreProbabilties(long childId, TLongHashSet oldSet)
     {
-        Node node = NODE_LIST.getNode(childId);
+        Node node = getNode(childId);
         
         if(oldSet.contains(childId))
         {
@@ -173,15 +174,15 @@ public abstract class ASystem {
         if(lastNodeId != null)
         {
             //If the proccess thinks the past Node pair was a success.
-            if(isSuccess(NODE_LIST.getNode(lastStepId), state))
+            if(isSuccess(getNode(lastStepId), state))
             {
-                NODE_LIST.getNode(lastNodeId).addSuccess();
-                NODE_LIST.getNode(lastStepId).addSuccess();
+                getNode(lastNodeId).addSuccess();
+                getNode(lastStepId).addSuccess();
             }
         }
         
         //This will get the Node with the given state, or make one and return it.
-        Node root = NODE_LIST.getNode(state);
+        Node root = getNode(state);
         
         debugger.println("Root Node Id: " + root.getNodeId());
         
@@ -195,12 +196,12 @@ public abstract class ASystem {
             root.children = setChildren(state);
             
             //Check for loops and get rid of children that create the loop.
-            root.children = NODE_LIST.deleteLoops(root.children, root.getNodeId());
+            root.children = nodeList.deleteLoops(root.children, root.getNodeId());
             
             //Add the root Node as a parent to its children.
             for(long child : root.children)
             {
-                NODE_LIST.getNode(child).addParent(root);
+                getNode(child).addParent(root);
             }
             
             debugger.println("Children created.");
@@ -230,12 +231,12 @@ public abstract class ASystem {
         
         //Add an occurence to both Nodes being used. (IE n++ in a binomial distribution)
         root.addOccurrence();
-        NODE_LIST.getNode(nextState).addOccurrence();
+        getNode(nextState).addOccurrence();
         
-        lastStepId = NODE_LIST.getNode(nextState).getNodeId();
+        lastStepId = getNode(nextState).getNodeId();
         
         debugger.println("Next Node Id: " + lastStepId);
-        debugger.println("Total number of Nodes: " + NODE_LIST.numberOfNodes());
+        debugger.println("Total number of Nodes: " + numberOfNodes());
         debugger.println("Returning next state.");
         debugger.println("");
         
@@ -249,15 +250,36 @@ public abstract class ASystem {
     }
     
     /**
-     * Use lastNodeId and lastStepId to call: NODE_LIST.getNode(lastNodeId).recalcProb();
+     * Use lastNodeId and lastStepId to call: getNode(lastNodeId).recalcProb();
      * Alternatively, someone could override this method and give a probability
      * rather than calculating it. This could be done by calling .giveProb(new probability)
      * instead of .recalcProb().
      */
     public void updateProbabilities()
     {
-        NODE_LIST.getNode(lastNodeId).recalcProb();
-        NODE_LIST.getNode(lastStepId).recalcProb(); 
+        getNode(lastNodeId).recalcProb();
+        getNode(lastStepId).recalcProb(); 
+    }
+    
+    public static Node<Key> getNode(long id)
+    {
+        
+    }
+    
+    /**
+     * Start up the algorithm so it can load Nodes from storage.
+     */
+    public void init()
+    {
+        
+    }
+    
+    /**
+     * Close the algorithm safely so that Nodes can be safely written to storage.
+     */
+    public void close()
+    {
+        
     }
     
     /**
