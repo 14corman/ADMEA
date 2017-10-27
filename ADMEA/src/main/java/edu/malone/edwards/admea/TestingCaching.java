@@ -6,13 +6,16 @@
 package edu.malone.edwards.admea;
 
 import java.io.File;
+import java.net.URL;
 import org.ehcache.Cache;
 import org.ehcache.PersistentCacheManager;
+import org.ehcache.config.Configuration;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.EntryUnit;
 import org.ehcache.config.units.MemoryUnit;
+import org.ehcache.xml.XmlConfiguration;
 
 /**
  *
@@ -24,22 +27,14 @@ public class TestingCaching {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        File jarPath = new File(TestingCaching.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-        String propertiesPath = jarPath.getParentFile().getAbsolutePath();
-        try(PersistentCacheManager persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
-            .with(CacheManagerBuilder.persistence(new File(propertiesPath, "NodeStore"))) 
-            .withCache("threeTieredCache",
-                CacheConfigurationBuilder.newCacheConfigurationBuilder(Long.class, String.class,
-                    ResourcePoolsBuilder.newResourcePoolsBuilder()
-                        .heap(10, EntryUnit.ENTRIES) 
-                        .offheap(1, MemoryUnit.MB) 
-                        .disk(20, MemoryUnit.MB, true) 
-                    )
-            ).build(true))
+        URL myUrl = TestingCaching.class.getClassLoader().getResource("cache.xml"); 
+        Configuration xmlConfig = new XmlConfiguration(myUrl);
+        try(PersistentCacheManager persistentCacheManager = (PersistentCacheManager) CacheManagerBuilder.newCacheManager(xmlConfig))
         {
-
-            Cache<Long, String> threeTieredCache = persistentCacheManager.getCache("threeTieredCache", Long.class, String.class);
+            persistentCacheManager.init();
+            Cache<Long, String> threeTieredCache = persistentCacheManager.getCache("default", Long.class, String.class);
             threeTieredCache.put(1L, "stillAvailableAfterRestart"); 
+//            System.out.println(threeTieredCache.get(1L));
         }
         catch(Exception ex)
         {
