@@ -20,12 +20,12 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
  *      <li>a score given to it by the process used for Q learning</li>
  *      <li>a policy given to it from Q learning of the scores to every other Node</li>
  *      <li>a unique state given to it by the process</li>
- *      <li>a unique long Id</li>
+ *      <li>a unique String Id</li>
  * </ul>
  * @author Cory Edwards
  * 
  */
-public class Node extends Observable implements Serializable, Observer {
+public class Node<K extends State> extends Observable implements Serializable, Observer {
     
     /**
      * probability for binomial distribution.
@@ -45,19 +45,19 @@ public class Node extends Observable implements Serializable, Observer {
     /**
      * The Node's Id that can be referenced from other Nodes.
      */
-    private final long id;
+    private final String id;
     
     /**
      * All children Nodes or paths to take.
      */
-    public long[] children = new long[0];
+    public String[] children = new String[0];
     
     /**
      * Every score for every other Node given this is the current Node obtained after Q learning.
      * If a Node is not a child of this Node then its score will be 0.
      * THashMap needs much less memory than normal HashMap, which is why it is used.
      */
-    private final THashMap<Long, Double> policy;
+    private final THashMap<String, Double> policy;
     
     /**
      * The score that Q learning will use to build a policy.
@@ -67,7 +67,7 @@ public class Node extends Observable implements Serializable, Observer {
     /**
      * The state that this Node is a reference for.
      */
-    private final State state;
+    private final K state;
     
     /**
      * Boolean to tell if a Node needs to be initialized or not.
@@ -79,7 +79,7 @@ public class Node extends Observable implements Serializable, Observer {
      * @param givenState The state that does not have a node yet.
      * @param givenId The unique id for this node.
      */
-    public Node(State<?> givenState, long givenId)
+    public Node(K givenState, String givenId)
     {
         policy = new THashMap();
         state = givenState;
@@ -97,7 +97,7 @@ public class Node extends Observable implements Serializable, Observer {
      * its policy.
      * @param newPolicy The given policy from Q learning.
      */
-    public void givePolicy(THashMap<Long, Double> newPolicy)
+    public void givePolicy(THashMap<String, Double> newPolicy)
     {
         policy.clear();
         policy.putAll(newPolicy);
@@ -112,7 +112,7 @@ public class Node extends Observable implements Serializable, Observer {
      * THashMap needs much less memory than normal HashMap, which is why it is used.
      * @return Get the policy for this Node.
      */
-    public THashMap<Long, Double> getPolicy()
+    public THashMap<String, Double> getPolicy()
     {
         return policy;
     }
@@ -148,11 +148,11 @@ public class Node extends Observable implements Serializable, Observer {
     /**
      * @return The winning child with the highest score from Q learning.
      */
-    public long getMaxQChild()
+    public String getMaxQChild()
     {
         double max = Double.MIN_VALUE;
-        long winningChildId = id;
-        for(Long childId : policy.keySet())
+        String winningChildId = id;
+        for(String childId : policy.keySet())
         {
             if(policy.get(childId) > max)
             {
@@ -177,7 +177,7 @@ public class Node extends Observable implements Serializable, Observer {
      * 
      * @return The Node's unique state.
      */
-    public State getState()
+    public K getState()
     {
         return state;
     }
@@ -267,7 +267,7 @@ public class Node extends Observable implements Serializable, Observer {
     /**
      * @return The Node's unique Id.
      */
-    public long getNodeId()
+    public String getNodeId()
     {
         return id;
     }

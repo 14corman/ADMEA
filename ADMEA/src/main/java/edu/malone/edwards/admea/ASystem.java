@@ -12,8 +12,9 @@ import edu.malone.edwards.admea.qlearning.QLearning;
 import edu.malone.edwards.admea.qlearning.QLearningList;
 import edu.malone.edwards.admea.utils.Debugging;
 import gnu.trove.map.hash.THashMap;
-import gnu.trove.set.hash.TLongHashSet;
+import gnu.trove.set.hash.THashSet;
 import java.util.ArrayList;
+import org.apache.commons.codec.digest.DigestUtils;
 
 /**
  * The main class for the algorithm.
@@ -40,13 +41,13 @@ public abstract class ASystem<K extends State> {
      * Used to keep track of the last root Node that was used to update
      * its binomial data in the next iteration.
      */
-    private Long lastNodeId = null;
+    private String lastNodeId = null;
     
     /**
      * Used to keep track of the last winning child Node that was used to update
      * its binomial data in the next iteration.
      */
-    private Long lastStepId = null; //used child Node
+    private String lastStepId = null; //used child Node
     
     /**
      * Used to determine if debugging is needed.
@@ -60,13 +61,13 @@ public abstract class ASystem<K extends State> {
      * @param children all of the children from the root Node.
      * @return The winning child's state.
      */
-    private State getWinningPath(long[] children)
+    private K getWinningPath(String[] children)
     {
-        THashMap<Long, Double> finalScores = new THashMap(); //Will be the list of children and their best scores.
-        for(long child : children)
+        THashMap<String, Double> finalScores = new THashMap(); //Will be the list of children and their best scores.
+        for(String child : children)
         {
             //Get the child's scores and probabilities per path.
-            ArrayList<double[]> pathScores = getScoreProbabilties(child, new TLongHashSet());
+            ArrayList<double[]> pathScores = getScoreProbabilties(child, new THashSet());
             double[] results = new double[pathScores.size()];
             
             //Each path's final score (binomial probabilities * sum of scores).
@@ -84,9 +85,9 @@ public abstract class ASystem<K extends State> {
         }
         
         //Find the child with the highest score.
-        long winningChild = children[0];
+        String winningChild = children[0];
         double max = -Double.MAX_VALUE;
-        for(long child : finalScores.keySet())
+        for(String child : finalScores.keySet())
         {
             double item = finalScores.get(child);
             if(item >= max)
@@ -97,7 +98,7 @@ public abstract class ASystem<K extends State> {
         }
         
         //Return the winning child's state.
-        return getNode(winningChild).getState();
+        return (K) nodeList.getNode(winningChild).getState();
     }
     
     /**
@@ -106,9 +107,9 @@ public abstract class ASystem<K extends State> {
      * @param childId The current Node's child.
      * @return An ArrayList of all possible score, probability combinations for all current paths.
      */
-    private ArrayList<double[]> getScoreProbabilties(long childId, TLongHashSet oldSet)
+    private ArrayList<double[]> getScoreProbabilties(String childId, THashSet oldSet)
     {
-        Node node = getNode(childId);
+        Node node = nodeList.getNode(childId);
         
         if(oldSet.contains(childId))
         {
@@ -121,7 +122,7 @@ public abstract class ASystem<K extends State> {
         }
         else
         {
-            TLongHashSet set = new TLongHashSet();
+            THashSet<String> set = new THashSet();
             set.addAll(oldSet);
             set.add(childId);
             
@@ -139,7 +140,7 @@ public abstract class ASystem<K extends State> {
                 ArrayList<double[]> results = new ArrayList();
 
                 //Go over current Node's children.
-                for(long child : node.children)
+                for(String child : node.children)
                 {
                     //Get all of the child's paths.
                     ArrayList<double[]> tempResults = getScoreProbabilties(child, set);
@@ -165,7 +166,7 @@ public abstract class ASystem<K extends State> {
      * @param state The current state in the process the algorithm is running in.
      * @return The next step to take in the process.
      */
-    public State performAction(State<?> state)
+    public K performAction(K state)
     {
         debugger.println("Starting process.");
         
@@ -174,15 +175,15 @@ public abstract class ASystem<K extends State> {
         if(lastNodeId != null)
         {
             //If the proccess thinks the past Node pair was a success.
-            if(isSuccess(getNode(lastStepId), state))
+            if(isSuccess(nodeList.getNode(lastStepId), state))
             {
-                getNode(lastNodeId).addSuccess();
-                getNode(lastStepId).addSuccess();
+                nodeList.getNode(lastNodeId).addSuccess();
+                nodeList.getNode(lastStepId).addSuccess();
             }
         }
         
         //This will get the Node with the given state, or make one and return it.
-        Node root = getNode(state);
+        Node root = nodeList.getNode(state);
         
         debugger.println("Root Node Id: " + root.getNodeId());
         
@@ -199,9 +200,9 @@ public abstract class ASystem<K extends State> {
             root.children = nodeList.deleteLoops(root.children, root.getNodeId());
             
             //Add the root Node as a parent to its children.
-            for(long child : root.children)
+            for(String child : root.children)
             {
-                getNode(child).addParent(root);
+                nodeList.getNode(child).addParent(root);
             }
             
             debugger.println("Children created.");
@@ -222,7 +223,7 @@ public abstract class ASystem<K extends State> {
         
         //Use the policy for the Node given the state along with combined 
         //binomial distributions to get the correct next Node's state to take.
-        State<?> nextState = getWinningPath(root.children);
+        K nextState = getWinningPath(root.children);
         
         debugger.println("Next path found.");
         
@@ -231,12 +232,12 @@ public abstract class ASystem<K extends State> {
         
         //Add an occurence to both Nodes being used. (IE n++ in a binomial distribution)
         root.addOccurrence();
-        getNode(nextState).addOccurrence();
+        nodeList.getNode(nextState).addOccurrence();
         
-        lastStepId = getNode(nextState).getNodeId();
+        lastStepId = nodeList.getNode(nextState).getNodeId();
         
         debugger.println("Next Node Id: " + lastStepId);
-        debugger.println("Total number of Nodes: " + numberOfNodes());
+        debugger.println("Total number of Nodes: " + nodeList.numberOfNodes());
         debugger.println("Returning next state.");
         debugger.println("");
         
@@ -250,28 +251,37 @@ public abstract class ASystem<K extends State> {
     }
     
     /**
-     * Use lastNodeId and lastStepId to call: getNode(lastNodeId).recalcProb();
+     * Use lastNodeId and lastStepId to call: nodeList.getNode(lastNodeId).recalcProb();
      * Alternatively, someone could override this method and give a probability
      * rather than calculating it. This could be done by calling .giveProb(new probability)
      * instead of .recalcProb().
      */
     public void updateProbabilities()
     {
-        getNode(lastNodeId).recalcProb();
-        getNode(lastStepId).recalcProb(); 
+        nodeList.getNode(lastNodeId).recalcProb();
+        nodeList.getNode(lastStepId).recalcProb(); 
     }
     
-    public static Node<Key> getNode(long id)
-    {
-        
-    }
+//    public Node<K> nodeList.getNode(String id)
+//    {
+//        
+//    }
     
     /**
      * Start up the algorithm so it can load Nodes from storage.
      */
     public void init()
     {
-        
+        nodeList.init();
+    }
+    
+    /**
+     * Sha-1 hash the state to get its id.
+     * @param state The state to hash
+     */
+    public String hashState(K state)
+    {
+        return DigestUtils.shaHex(state.toString());
     }
     
     /**
@@ -279,7 +289,7 @@ public abstract class ASystem<K extends State> {
      */
     public void close()
     {
-        
+        nodeList.close();
     }
     
     /**
@@ -288,14 +298,14 @@ public abstract class ASystem<K extends State> {
      * @param newNodeState The new state in the current iteration.
      * @return True if and only if the child Node taken was successful.
      */
-    public abstract boolean isSuccess(Node lastNode, State<?> newNodeState);
+    public abstract boolean isSuccess(Node lastNode, K newNodeState);
     
     /**
      * How the program will calculate the score to give to Q learning when a policy is being made.
      * @param state The state to get the score from.
      * @return The score that will go along with this state.
      */
-    public abstract int calculateScore(State<?> state);
+    public abstract int calculateScore(K state);
     
     /**
      * 
@@ -303,13 +313,13 @@ public abstract class ASystem<K extends State> {
      * @param stateB The new state.
      * @return True if and only if stateA = stateB
      */
-    public abstract boolean areStatesEqual(State<?> stateA, State<?> stateB);
+    public abstract boolean areStatesEqual(K stateA, K stateB);
     
     /**
      * Use the given state and NODE_LIST to create all of the children from 
      * the state, and return a list of their Ids.
      * @param state The parent's state
-     * @return A long[] of all of the newly created child Ids.
+     * @return A String[] of all of the newly created child Ids.
      */
-    public abstract long[] setChildren(State<?> state);
+    public abstract String[] setChildren(K state);
 }

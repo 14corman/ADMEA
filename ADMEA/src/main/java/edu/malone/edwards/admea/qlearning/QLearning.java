@@ -1,7 +1,7 @@
 package edu.malone.edwards.admea.qlearning;
 
-import static edu.malone.edwards.admea.ASystem.NODE_LIST;
 import edu.malone.edwards.admea.nodeUtils.Node;
+import edu.malone.edwards.admea.nodeUtils.Nodes;
 import edu.malone.edwards.admea.utils.Debugging;
 import gnu.trove.map.hash.THashMap;
  
@@ -26,15 +26,15 @@ public class QLearning {
     
     //Rewards will come from the parent score - child score. Those scores are calculated when a Node is initialized.
     //If a Node is not a valid child of of the parent then that value is set to 0.
-    private THashMap<Long, Integer> R;
+    private THashMap<String, Integer> R;
     
     //Map of every child Node's Q value coming from every parent.
-    private THashMap<Long, Double> Q;
+    private THashMap<String, Double> Q;
     
     private final Debugging debugger = new Debugging();
     
     //Children Ids for each Node.
-//    private THashMap<Long, long[]> actions;
+//    private THashMap<String, String[]> actions;
     
     /**
      * Start the learning process.
@@ -51,16 +51,16 @@ public class QLearning {
             Q = new THashMap(node.children.length, .9f);
 
             //Now go through and reset all of the possible children to an actual value.
-            for(long childId : node.children)
+            for(String childId : node.children)
             {
-                Node childNode = NODE_LIST.getNode(childId);
+                Node childNode = Nodes.getNode(childId);
                 R.put(childId, node.getScore() - childNode.getScore());
                 Q.put(childId, 0.0);
             }
 
             for(int i =0; i < 300; i++)
             {
-                for(long childId : node.children)
+                for(String childId : node.children)
                 {
                     //Get all of the variables needed.
                     double q = Q(childId);
@@ -83,13 +83,13 @@ public class QLearning {
 //        for (int i = 0; i < 10000; i++)
 //        { 
 //            //Go over each Node.
-//            for(long id : actions.keySet())
+//            for(String id : actions.keySet())
 //            {
 //                //If the Node has children.
 //                if(actions.get(id).length != 0)
 //                {
 //                    //Go over all of the children for the Node.
-//                    for(long childId : actions.get(id))
+//                    for(String childId : actions.get(id))
 //                    {
 //                        //Get all of the variables needed.
 //                        double q = Q(id, childId);
@@ -107,14 +107,14 @@ public class QLearning {
  
     //s is a Node. You will get and iterate over all its children to find the one
     //with the highest value.
-    private double maxQ(long s) 
+    private double maxQ(String s) 
     {
-        long[] actionsFromState = NODE_LIST.getNode(s).children;
+        String[] actionsFromState = Nodes.getNode(s).children;
         double maxValue = Double.MIN_VALUE;
         for (int i = 0; i < actionsFromState.length; i++) 
         {
-            long nextState = actionsFromState[i];
-            double value = NODE_LIST.getNode(s).getPolicy().get(nextState);
+            String nextState = actionsFromState[i];
+            Double value = (Double) Nodes.getNode(s).getPolicy().get(nextState);
  
             if (value > maxValue)
                 maxValue = value;
@@ -123,7 +123,7 @@ public class QLearning {
     }
     
     //a = child Id
-    private double Q(long a)
+    private double Q(String a)
     {
         return Q.get(a);
     }
@@ -131,14 +131,14 @@ public class QLearning {
     //s = parent Id
     //a = child Id
     //value = setting value
-    private void setQ(long a, double value)
+    private void setQ(String a, double value)
     {
         Q.put(a, value);
     }
  
     //s = parent Id
     //a = child Id
-    private int R(long a) 
+    private int R(String a) 
     {
         return R.get(a);
     }
@@ -148,7 +148,7 @@ public class QLearning {
      */
 //    public void applyPolicies()
 //    {
-//        for(long id : NODE_LIST.keySet())
-//            NODE_LIST.getNode(id).givePolicy(new THashMap(Q.get(id)));
+//        for(String id : Nodes.keySet())
+//            Nodes.getNode(id).givePolicy(new THashMap(Q.get(id)));
 //    }
 }

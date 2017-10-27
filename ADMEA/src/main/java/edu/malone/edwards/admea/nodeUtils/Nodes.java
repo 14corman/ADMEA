@@ -5,11 +5,10 @@
  */
 package edu.malone.edwards.admea.nodeUtils;
 
-import gnu.trove.map.hash.THashMap;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.apache.commons.codec.digest.DigestUtils;
 
 /**
  * Holds all Nodes in the application, and can create, get, and work with all
@@ -17,17 +16,16 @@ import java.util.stream.Collectors;
  * 
  * @author Cory Edwards
  */
-public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
+public class Nodes<K extends State> {
     
-    //To keep track of which state has which Id.
-    private final THashMap<State, Long> stateToId = new THashMap();
+    private int n = 0;
     
     /**
      * @return The number of Nodes in the system.
      */
     public int numberOfNodes()
     {
-        return size();
+        return n;
     }
     
     /**
@@ -37,17 +35,12 @@ public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
      * @param states The method created by the process to see if 2 states are equal.
      * @return The Node with that state.
      */
-    public Node getNode(State<?> state)
+    public Node getNode(K state)
     {
-        if(stateToId.containsKey(state))
-        {
-            return get(stateToId.get(state));
-        }
-        else
-        {
-            //If the Node is not in the list then create it and return it.
-            return get(createNode(state));
-        }
+        Node node = getNode(DigestUtils.shaHex(state.toString()));
+        if(node == null)
+            node = createNode(state);
+        return node;
     }
     
     /**
@@ -55,7 +48,7 @@ public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
      * @param id The id of the wanted Node. Cannot be null.
      * @return The Node with the given Id.
      */
-    public Node getNode(long id)
+    public static Node getNode(String id)
     {
         return get(id);
     }
@@ -64,19 +57,19 @@ public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
      * Create a new Node with a unique Id and the given state.
      * @param state The state to give the new Node.
      */
-    private synchronized long createNode(State<?> state)
+    private synchronized Node createNode(K state)
     {
         //Give the Node a new incremented Id.
-        long newId = size();
+        String newId = DigestUtils.shaHex(state.toString());
+        Node node = new Node(state, newId);
         
         //Create the new Node and put it into the list.
-        put(newId, new Node(state, newId));
+        put(newId, node);
         
-        //Add the state Id pair.
-        stateToId.put(state, newId);
+        n++;
         
-        //Return the new Node's Id.
-        return newId;
+        //Return the new Node.
+        return node;
     }
     
     /**
@@ -85,22 +78,22 @@ public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
      * @param parent The parent node ID.
      * @return A list of all good children.
      */
-    public long[] deleteLoops(long[] children, long parent)
+    public String[] deleteLoops(String[] children, String parent)
     {
-        ArrayList<Long> tree = new ArrayList();
-        ArrayList<Long> goodEdges = new ArrayList();
+        ArrayList<String> tree = new ArrayList();
+        ArrayList<String> goodEdges = new ArrayList();
         
-        for(long child : children)
+        for(String child : children)
         {
             //Add the child to the temp tree and list of good edges.
             tree.add(child);
             goodEdges.add(child);
             
-            Long[] treeNodes = tree.toArray(new Long[0]);
-            for(Long n : treeNodes)
+            String[] treeNodes = tree.toArray(new String[0]);
+            for(String n : treeNodes)
             {
                 //If n == parent, then we hit a loop and are right back where we started.
-                if(n == parent)
+                if(n.equals(parent))
                 {
                     //That means adding this child as an edge would form a loop, so delete the edge.
                     goodEdges.remove(child);
@@ -118,10 +111,20 @@ public class Nodes<K> extends THashMap<Long, Node> implements Serializable {
             tree.clear();
         }
         
-        long[] goodChildren = new long[goodEdges.size()];
+        String[] goodChildren = new String[goodEdges.size()];
         for(int i = 0; i < goodChildren.length; i++)
             goodChildren[i] = goodEdges.get(i);
         
         return goodChildren;
+    }
+    
+    public void init()
+    {
+        
+    }
+    
+    public void close()
+    {
+        
     }
 }
