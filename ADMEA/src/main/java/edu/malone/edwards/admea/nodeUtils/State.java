@@ -35,18 +35,4 @@ public abstract class State<K> implements Serializable
         hash = 19 * hash + Objects.hashCode(this.object);
         return hash;
     }
-    
-    private String boardToString()
-    {
-        StringBuilder builder = new StringBuilder();
-        int[][] array = (int[][]) object;
-        for(int i = 0; i < 10; i++)
-        {
-            for(int x = 0; x < 10; x++)
-            {
-                builder.append(array[i][x]);
-            }
-        }
-        return builder.toString();
-    }
 }

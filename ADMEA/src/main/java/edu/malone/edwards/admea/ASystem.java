@@ -98,7 +98,7 @@ public abstract class ASystem<K extends State> {
         }
         
         //Return the winning child's state.
-        return (K) nodeList.getNode(winningChild).getState();
+        return (K) Nodes.getNode(winningChild).getState();
     }
     
     /**
@@ -109,7 +109,7 @@ public abstract class ASystem<K extends State> {
      */
     private ArrayList<double[]> getScoreProbabilties(String childId, THashSet oldSet)
     {
-        Node node = nodeList.getNode(childId);
+        Node node = Nodes.getNode(childId);
         
         if(oldSet.contains(childId))
         {
@@ -175,10 +175,10 @@ public abstract class ASystem<K extends State> {
         if(lastNodeId != null)
         {
             //If the proccess thinks the past Node pair was a success.
-            if(isSuccess(nodeList.getNode(lastStepId), state))
+            if(isSuccess(Nodes.getNode(lastStepId), state))
             {
-                nodeList.getNode(lastNodeId).addSuccess();
-                nodeList.getNode(lastStepId).addSuccess();
+                Nodes.getNode(lastNodeId).addSuccess();
+                Nodes.getNode(lastStepId).addSuccess();
             }
         }
         
@@ -202,7 +202,7 @@ public abstract class ASystem<K extends State> {
             //Add the root Node as a parent to its children.
             for(String child : root.children)
             {
-                nodeList.getNode(child).addParent(root);
+                Nodes.getNode(child).addParent(root);
             }
             
             debugger.println("Children created.");
@@ -258,14 +258,14 @@ public abstract class ASystem<K extends State> {
      */
     public void updateProbabilities()
     {
-        nodeList.getNode(lastNodeId).recalcProb();
-        nodeList.getNode(lastStepId).recalcProb(); 
+        Nodes.getNode(lastNodeId).recalcProb();
+        Nodes.getNode(lastStepId).recalcProb(); 
     }
     
-//    public Node<K> nodeList.getNode(String id)
-//    {
-//        
-//    }
+    public Node<K> getNode(K state)
+    {
+        return nodeList.getNode(state);
+    }
     
     /**
      * Start up the algorithm so it can load Nodes from storage.

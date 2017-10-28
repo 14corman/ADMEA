@@ -5,10 +5,21 @@
  */
 package edu.malone.edwards.admea.nodeUtils;
 
+import edu.malone.edwards.admea.TestingCaching;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.ehcache.Cache;
+import org.ehcache.PersistentCacheManager;
+import org.ehcache.config.Configuration;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.spi.loaderwriter.BulkCacheLoadingException;
+import org.ehcache.spi.loaderwriter.BulkCacheWritingException;
+import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
+import org.ehcache.xml.XmlConfiguration;
 
 /**
  * Holds all Nodes in the application, and can create, get, and work with all
@@ -16,9 +27,11 @@ import org.apache.commons.codec.digest.DigestUtils;
  * 
  * @author Cory Edwards
  */
-public class Nodes<K extends State> {
+public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
     
     private int n = 0;
+    private PersistentCacheManager persistentCacheManager;
+    private static Cache<String, Node> nodes;
     
     /**
      * @return The number of Nodes in the system.
@@ -50,7 +63,7 @@ public class Nodes<K extends State> {
      */
     public static Node getNode(String id)
     {
-        return get(id);
+        return nodes.get(id);
     }
     
     /**
@@ -64,7 +77,7 @@ public class Nodes<K extends State> {
         Node node = new Node(state, newId);
         
         //Create the new Node and put it into the list.
-        put(newId, node);
+        nodes.put(newId, node);
         
         n++;
         
@@ -90,10 +103,10 @@ public class Nodes<K extends State> {
             goodEdges.add(child);
             
             String[] treeNodes = tree.toArray(new String[0]);
-            for(String n : treeNodes)
+            for(String treeNode : treeNodes)
             {
                 //If n == parent, then we hit a loop and are right back where we started.
-                if(n.equals(parent))
+                if(treeNode.equals(parent))
                 {
                     //That means adding this child as an edge would form a loop, so delete the edge.
                     goodEdges.remove(child);
@@ -101,10 +114,10 @@ public class Nodes<K extends State> {
                 }
                 
                 //Add all of the current nodes children to tree to be able to continue down the path.
-                if(get(n).children.length != 0)
-                    tree.addAll(Arrays.stream(get(n).children).boxed().collect(Collectors.toSet()));
+                if(nodes.get(treeNode).children.length != 0)
+                    tree.addAll(Arrays.stream(nodes.get(treeNode).children).collect(Collectors.toSet()));
                 
-                tree.remove(n);
+                tree.remove(treeNode);
             }
             
             //Because break could be called and we need a clean tree in the next loop.
@@ -120,11 +133,45 @@ public class Nodes<K extends State> {
     
     public void init()
     {
-        
+        URL myUrl = TestingCaching.class.getClassLoader().getResource("cache.xml"); 
+        Configuration xmlConfig = new XmlConfiguration(myUrl);
+        persistentCacheManager = (PersistentCacheManager) CacheManagerBuilder.newCacheManager(xmlConfig);
+        persistentCacheManager.init();
+        nodes = persistentCacheManager.getCache("default", String.class, Node.class);
     }
     
     public void close()
     {
-        
+        persistentCacheManager.close();
+    }
+
+    @Override
+    public Node load(String k) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Map<String, Node> loadAll(Iterable<? extends String> itrbl) throws BulkCacheLoadingException, Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void write(String k, Node v) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void delete(String k) throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void deleteAll(Iterable<? extends String> itrbl) throws BulkCacheWritingException, Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
