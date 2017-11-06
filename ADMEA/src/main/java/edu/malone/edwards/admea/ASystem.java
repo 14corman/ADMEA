@@ -9,11 +9,15 @@ import edu.malone.edwards.admea.nodeUtils.Node;
 import edu.malone.edwards.admea.nodeUtils.Nodes;
 import edu.malone.edwards.admea.nodeUtils.State;
 import edu.malone.edwards.admea.qlearning.QLearning;
-import edu.malone.edwards.admea.qlearning.QLearningList;
+import edu.malone.edwards.admea.qlearning.QlearningQueue;
 import edu.malone.edwards.admea.utils.Debugging;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /**
@@ -26,16 +30,15 @@ import org.apache.commons.codec.digest.DigestUtils;
  *          This way the programmer does not have to worry about that. Just have a shutdown method called.
  * 
  * @author Cory Edwards
- * @param <K>
  */
-public abstract class ASystem<K extends State> {
+public abstract class ASystem {
     
     /**
      *A always existing list of all of the Nodes in the algorithm.
      *Analogous to a jar holding every Node, and the Nodes are free of each
      *other in the jar. 
      */
-    private Nodes<K> nodeList = new Nodes();
+    protected static Nodes nodeList = new Nodes();
     
     /**
      * Used to keep track of the last root Node that was used to update
@@ -56,16 +59,21 @@ public abstract class ASystem<K extends State> {
     
     private final Debugging debugger = new Debugging();
     
+    public static QlearningQueue qLearningBuffer = new QlearningQueue(10);
+    public static ExecutorService qLearningQueue = Executors.newFixedThreadPool(1);
+    
     /**
      * Determine which child to go to next from the root.
      * @param children all of the children from the root Node.
      * @return The winning child's state.
      */
-    private K getWinningPath(String[] children)
+    private State getWinningPath(Set<String> children)
     {
         THashMap<String, Double> finalScores = new THashMap(); //Will be the list of children and their best scores.
+        String winningChild = "";
         for(String child : children)
         {
+            winningChild = child;
             //Get the child's scores and probabilities per path.
             ArrayList<double[]> pathScores = getScoreProbabilties(child, new THashSet());
             double[] results = new double[pathScores.size()];
@@ -85,7 +93,6 @@ public abstract class ASystem<K extends State> {
         }
         
         //Find the child with the highest score.
-        String winningChild = children[0];
         double max = -Double.MAX_VALUE;
         for(String child : finalScores.keySet())
         {
@@ -98,7 +105,7 @@ public abstract class ASystem<K extends State> {
         }
         
         //Return the winning child's state.
-        return (K) Nodes.getNode(winningChild).getState();
+        return Nodes.getNode(winningChild).getState();
     }
     
     /**
@@ -127,7 +134,7 @@ public abstract class ASystem<K extends State> {
             set.add(childId);
             
             //If there are no children for the current Node then we have hit a leaf Node.
-            if(node.children.length == 0)
+            if(node.children.isEmpty())
             {
                 //Get the leaf Node's score and binomial probability.
                 ArrayList<double[]> temp = new ArrayList();
@@ -166,7 +173,7 @@ public abstract class ASystem<K extends State> {
      * @param state The current state in the process the algorithm is running in.
      * @return The next step to take in the process.
      */
-    public K performAction(K state)
+    public State performAction(State state)
     {
         debugger.println("Starting process.");
         
@@ -214,16 +221,17 @@ public abstract class ASystem<K extends State> {
             debugger.println("Score calculated.");
             
             //Create policy for all Nodes and apply them.
-            new QLearning().learn(root);
+            qLearningQueue.submit(new QLearning(root));
             
             debugger.println("Policies given.");
             
-            debugger.println("Root has " + root.countObservers() + " number of observers.");
+            debugger.println("Root has " + root.parents.length + " number of parents.");
+            debugger.println("Root has " + root.children.size() + " number of children.");
         }
         
         //Use the policy for the Node given the state along with combined 
         //binomial distributions to get the correct next Node's state to take.
-        K nextState = getWinningPath(root.children);
+        State nextState = getWinningPath(root.children);
         
         debugger.println("Next path found.");
         
@@ -232,9 +240,10 @@ public abstract class ASystem<K extends State> {
         
         //Add an occurence to both Nodes being used. (IE n++ in a binomial distribution)
         root.addOccurrence();
-        nodeList.getNode(nextState).addOccurrence();
+        Node nextNode = nodeList.getNode(nextState);
+        nextNode.addOccurrence();
         
-        lastStepId = nodeList.getNode(nextState).getNodeId();
+        lastStepId = nextNode.getNodeId();
         
         debugger.println("Next Node Id: " + lastStepId);
         debugger.println("Total number of Nodes: " + nodeList.numberOfNodes());
@@ -244,7 +253,9 @@ public abstract class ASystem<K extends State> {
         //Update the Nodes' probabilities.
         updateProbabilities();
         
-        QLearningList.clear();
+        Nodes.saveNode(root);
+        Nodes.saveNode(nextNode);
+        
         
         //Return the next state to take.
         return nextState;
@@ -262,7 +273,7 @@ public abstract class ASystem<K extends State> {
         Nodes.getNode(lastStepId).recalcProb(); 
     }
     
-    public Node<K> getNode(K state)
+    public Node getNode(State state)
     {
         return nodeList.getNode(state);
     }
@@ -270,7 +281,7 @@ public abstract class ASystem<K extends State> {
     /**
      * Start up the algorithm so it can load Nodes from storage.
      */
-    public void init()
+    public void init() throws MalformedURLException
     {
         nodeList.init();
     }
@@ -279,7 +290,7 @@ public abstract class ASystem<K extends State> {
      * Sha-1 hash the state to get its id.
      * @param state The state to hash
      */
-    public String hashState(K state)
+    public String hashState(State state)
     {
         return DigestUtils.shaHex(state.toString());
     }
@@ -290,6 +301,7 @@ public abstract class ASystem<K extends State> {
     public void close()
     {
         nodeList.close();
+        qLearningQueue.shutdown();
     }
     
     /**
@@ -298,14 +310,14 @@ public abstract class ASystem<K extends State> {
      * @param newNodeState The new state in the current iteration.
      * @return True if and only if the child Node taken was successful.
      */
-    public abstract boolean isSuccess(Node lastNode, K newNodeState);
+    public abstract boolean isSuccess(Node lastNode, State newNodeState);
     
     /**
      * How the program will calculate the score to give to Q learning when a policy is being made.
      * @param state The state to get the score from.
      * @return The score that will go along with this state.
      */
-    public abstract int calculateScore(K state);
+    public abstract int calculateScore(State state);
     
     /**
      * 
@@ -313,7 +325,7 @@ public abstract class ASystem<K extends State> {
      * @param stateB The new state.
      * @return True if and only if stateA = stateB
      */
-    public abstract boolean areStatesEqual(K stateA, K stateB);
+    public abstract boolean areStatesEqual(State stateA, State stateB);
     
     /**
      * Use the given state and NODE_LIST to create all of the children from 
@@ -321,5 +333,5 @@ public abstract class ASystem<K extends State> {
      * @param state The parent's state
      * @return A String[] of all of the newly created child Ids.
      */
-    public abstract String[] setChildren(K state);
+    public abstract Set<String> setChildren(State state);
 }

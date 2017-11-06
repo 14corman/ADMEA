@@ -5,11 +5,12 @@
  */
 package edu.malone.edwards.admea.nodeUtils;
 
+import static edu.malone.edwards.admea.ASystem.qLearningQueue;
 import edu.malone.edwards.admea.qlearning.QLearning;
 import gnu.trove.map.hash.THashMap;
 import java.io.Serializable;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 
 /**
@@ -25,7 +26,7 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
  * @author Cory Edwards
  * 
  */
-public class Node<K extends State> extends Observable implements Serializable, Observer {
+public class Node implements Serializable {
     
     /**
      * probability for binomial distribution.
@@ -50,7 +51,7 @@ public class Node<K extends State> extends Observable implements Serializable, O
     /**
      * All children Nodes or paths to take.
      */
-    public String[] children = new String[0];
+    public Set<String> children = new HashSet();
     
     /**
      * Every score for every other Node given this is the current Node obtained after Q learning.
@@ -67,19 +68,21 @@ public class Node<K extends State> extends Observable implements Serializable, O
     /**
      * The state that this Node is a reference for.
      */
-    private final K state;
+    private final State state;
     
     /**
      * Boolean to tell if a Node needs to be initialized or not.
      */
     private boolean isNew;
     
+    public String[] parents = new String[0];
+    
     /**
      * Create a new Node for a new state.
      * @param givenState The state that does not have a node yet.
      * @param givenId The unique id for this node.
      */
-    public Node(K givenState, String givenId)
+    public Node(State givenState, String givenId)
     {
         policy = new THashMap();
         state = givenState;
@@ -89,7 +92,10 @@ public class Node<K extends State> extends Observable implements Serializable, O
     
     public void addParent(Node parent)
     {
-        this.addObserver(parent);
+        String[] temp = new String[parents.length + 1];
+        System.arraycopy(parents, 0, temp, 0, parents.length);
+        temp[temp.length - 1] = parent.id;
+        parents = temp;
     }
     
     /**
@@ -101,8 +107,7 @@ public class Node<K extends State> extends Observable implements Serializable, O
     {
         policy.clear();
         policy.putAll(newPolicy);
-        setChanged();
-        notifyObservers();
+        //Needs to either be put back, or updated
 
     }
     
@@ -162,12 +167,12 @@ public class Node<K extends State> extends Observable implements Serializable, O
             }
         }
         
-        if(winningChildId == id)
+        if(winningChildId == null ? id == null : winningChildId.equals(id))
         {
-            if(children.length == 0)
+            if(children.isEmpty())
                 return id;
             else
-                return children[0];
+                return children.toArray()[0].toString();
         }
         else
             return winningChildId;
@@ -177,7 +182,7 @@ public class Node<K extends State> extends Observable implements Serializable, O
      * 
      * @return The Node's unique state.
      */
-    public K getState()
+    public State getState()
     {
         return state;
     }
@@ -216,8 +221,7 @@ public class Node<K extends State> extends Observable implements Serializable, O
     public void recalcProb()
     {
         p = (float) k / n;
-        setChanged();
-        notifyObservers();
+        //Needs to be put back, or updated fired.
     }
     
     /**
@@ -228,8 +232,7 @@ public class Node<K extends State> extends Observable implements Serializable, O
     public void giveProb(double newP)
     {
         p = newP;
-        setChanged();
-        notifyObservers();
+        //Needs to be put back, or updated fired.//Needs to be put back, or updated fired.
     }
     
     /**
@@ -272,10 +275,9 @@ public class Node<K extends State> extends Observable implements Serializable, O
         return id;
     }
 
-    @Override
-    public void update(Observable o, Object arg)
+    public void update()
     {
-        new QLearning().learn(this);
+        qLearningQueue.submit(new QLearning(this));
 //        System.out.println("Updated " + id);
     }
 }

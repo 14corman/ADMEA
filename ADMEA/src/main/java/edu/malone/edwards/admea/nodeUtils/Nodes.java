@@ -5,14 +5,17 @@
  */
 package edu.malone.edwards.admea.nodeUtils;
 
-import edu.malone.edwards.admea.TestingCaching;
+import gnu.trove.map.hash.THashMap;
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.ehcache.Cache;
+import org.ehcache.Cache.Entry;
 import org.ehcache.PersistentCacheManager;
 import org.ehcache.config.Configuration;
 import org.ehcache.config.builders.CacheManagerBuilder;
@@ -20,6 +23,7 @@ import org.ehcache.spi.loaderwriter.BulkCacheLoadingException;
 import org.ehcache.spi.loaderwriter.BulkCacheWritingException;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
 import org.ehcache.xml.XmlConfiguration;
+import org.openide.util.Utilities;
 
 /**
  * Holds all Nodes in the application, and can create, get, and work with all
@@ -27,11 +31,12 @@ import org.ehcache.xml.XmlConfiguration;
  * 
  * @author Cory Edwards
  */
-public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
+public class Nodes implements CacheLoaderWriter<String, Node>{
     
-    private int n = 0;
     private PersistentCacheManager persistentCacheManager;
     private static Cache<String, Node> nodes;
+    private THashMap<String, Node> cache = new THashMap();
+    public int n = 0;
     
     /**
      * @return The number of Nodes in the system.
@@ -48,7 +53,7 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
      * @param states The method created by the process to see if 2 states are equal.
      * @return The Node with that state.
      */
-    public Node getNode(K state)
+    public synchronized Node getNode(State state)
     {
         Node node = getNode(DigestUtils.shaHex(state.toString()));
         if(node == null)
@@ -61,7 +66,7 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
      * @param id The id of the wanted Node. Cannot be null.
      * @return The Node with the given Id.
      */
-    public static Node getNode(String id)
+    public synchronized static Node getNode(String id)
     {
         return nodes.get(id);
     }
@@ -70,7 +75,7 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
      * Create a new Node with a unique Id and the given state.
      * @param state The state to give the new Node.
      */
-    private synchronized Node createNode(K state)
+    private synchronized Node createNode(State state)
     {
         //Give the Node a new incremented Id.
         String newId = DigestUtils.shaHex(state.toString());
@@ -79,10 +84,13 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
         //Create the new Node and put it into the list.
         nodes.put(newId, node);
         
-        n++;
-        
         //Return the new Node.
         return node;
+    }
+    
+    public static void saveNode(Node node)
+    {
+        nodes.put(node.getNodeId(), node);
     }
     
     /**
@@ -91,10 +99,10 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
      * @param parent The parent node ID.
      * @return A list of all good children.
      */
-    public String[] deleteLoops(String[] children, String parent)
+    public Set<String> deleteLoops(Set<String> children, String parent)
     {
-        ArrayList<String> tree = new ArrayList();
-        ArrayList<String> goodEdges = new ArrayList();
+        Set<String> tree = new HashSet();
+        Set<String> goodEdges = new HashSet();
         
         for(String child : children)
         {
@@ -114,8 +122,8 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
                 }
                 
                 //Add all of the current nodes children to tree to be able to continue down the path.
-                if(nodes.get(treeNode).children.length != 0)
-                    tree.addAll(Arrays.stream(nodes.get(treeNode).children).collect(Collectors.toSet()));
+                if(!nodes.get(treeNode).children.isEmpty())
+                    tree.addAll(nodes.get(treeNode).children);
                 
                 tree.remove(treeNode);
             }
@@ -124,16 +132,16 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
             tree.clear();
         }
         
-        String[] goodChildren = new String[goodEdges.size()];
-        for(int i = 0; i < goodChildren.length; i++)
-            goodChildren[i] = goodEdges.get(i);
-        
-        return goodChildren;
+        return goodEdges;
     }
     
-    public void init()
+    public void init() throws MalformedURLException
     {
-        URL myUrl = TestingCaching.class.getClassLoader().getResource("cache.xml"); 
+//        CachingProvider cachingProvider = Caching.getCachingProvider();
+//        persistentCacheManager = cachingProvider.getCacheManager( 
+//            Utilities.toURI(new File("C:\\NSF\\GameOfLifeWebsite\\cache.xml")), 
+//            getClass().getClassLoader()); 
+        URL myUrl = Utilities.toURI(new File("C:\\NSF\\GameOfLifeWebsite\\cache.xml")).toURL(); 
         Configuration xmlConfig = new XmlConfiguration(myUrl);
         persistentCacheManager = (PersistentCacheManager) CacheManagerBuilder.newCacheManager(xmlConfig);
         persistentCacheManager.init();
@@ -142,36 +150,52 @@ public class Nodes<K extends State> implements CacheLoaderWriter<String, Node>{
     
     public void close()
     {
-        persistentCacheManager.close();
+        if(persistentCacheManager != null)
+            persistentCacheManager.close();
     }
 
     @Override
-    public Node load(String k) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized Node load(String k) throws Exception {
+        return cache.get(k);
     }
 
     @Override
-    public Map<String, Node> loadAll(Iterable<? extends String> itrbl) throws BulkCacheLoadingException, Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized Map<String, Node> loadAll(Iterable<? extends String> itrbl) throws BulkCacheLoadingException, Exception {
+        Map<String, Node> map = new THashMap();
+        Iterator<? extends String> it = itrbl.iterator();
+        while(it.hasNext())
+        {
+            String key = it.next();
+            map.put(key, cache.get(key));
+        }
+        return map;
     }
 
     @Override
-    public void write(String k, Node v) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized void write(String k, Node v) throws Exception {
+        cache.put(k, v);
     }
 
     @Override
-    public void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
+        Iterator<? extends Map.Entry<? extends String, ? extends Node>> it = itrbl.iterator();
+        while(it.hasNext())
+        {
+            Entry<? extends String, ? extends Node> entry = 
+                    (Entry<? extends String, ? extends Node>) it.next();
+            cache.put(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
-    public void delete(String k) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized void delete(String k) throws Exception {
+        cache.remove(k);
     }
 
     @Override
-    public void deleteAll(Iterable<? extends String> itrbl) throws BulkCacheWritingException, Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public synchronized void deleteAll(Iterable<? extends String> itrbl) throws BulkCacheWritingException, Exception {
+        Iterator<? extends String> it = itrbl.iterator();
+        while(it.hasNext())
+            cache.remove(it.next());
     }
 }

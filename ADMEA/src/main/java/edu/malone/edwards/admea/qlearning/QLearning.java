@@ -1,9 +1,11 @@
 package edu.malone.edwards.admea.qlearning;
 
+import static edu.malone.edwards.admea.ASystem.qLearningBuffer;
 import edu.malone.edwards.admea.nodeUtils.Node;
 import edu.malone.edwards.admea.nodeUtils.Nodes;
 import edu.malone.edwards.admea.utils.Debugging;
 import gnu.trove.map.hash.THashMap;
+import java.util.Iterator;
  
 /**
  * created by: Kunuk Nykjaer &nbsp;&nbsp;&nbsp; website:
@@ -18,7 +20,7 @@ import gnu.trove.map.hash.THashMap;
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://en.wikipedia.org/wiki/Q-learning">wikipedia Q-learning</a> <br>
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://people.revoledu.com/kardi/tutorial/ReinforcementLearning/Q-Learning.htm">Q-learning tutorial</a>
  */
-public class QLearning {
+public class QLearning implements Runnable {
  
     // path finding
     private final double alpha = 0.1;
@@ -33,22 +35,25 @@ public class QLearning {
     
     private final Debugging debugger = new Debugging();
     
-    //Children Ids for each Node.
-//    private THashMap<String, String[]> actions;
+    private final Node node;
+    
+    public QLearning(Node input)
+    {
+        node = input;
+    }
     
     /**
      * Start the learning process.
      */
-    public void learn(Node node) 
-    {
-        if(QLearningList.checkList(node))
-            return;
-        
-        if(node.children.length != 0)
+    @Override
+    public void run() 
+    {   
+        qLearningBuffer.add(node.getNodeId());
+        if(!node.children.isEmpty())
         {
             debugger.println("Starting Q learning for node " + node.getNodeId() + ".");
-            R = new THashMap(node.children.length, .9f);
-            Q = new THashMap(node.children.length, .9f);
+            R = new THashMap(node.children.size(), .9f);
+            Q = new THashMap(node.children.size(), .9f);
 
             //Now go through and reset all of the possible children to an actual value.
             for(String childId : node.children)
@@ -74,50 +79,25 @@ public class QLearning {
             }
 
             node.givePolicy(Q);
+            Nodes.saveNode(node);
             debugger.println("Q learning done for node " + node.getNodeId() + ".");
-//            QLearningList.remove(node);
         }
-        
-        //Old way of doing Q learning.
-//        // train episodes
-//        for (int i = 0; i < 10000; i++)
-//        { 
-//            //Go over each Node.
-//            for(String id : actions.keySet())
-//            {
-//                //If the Node has children.
-//                if(actions.get(id).length != 0)
-//                {
-//                    //Go over all of the children for the Node.
-//                    for(String childId : actions.get(id))
-//                    {
-//                        //Get all of the variables needed.
-//                        double q = Q(id, childId);
-//                        double maxQ = maxQ(childId);
-//                        int r = R(id, childId);
-//
-//                        // Q(s,a)= Q(s,a) + alpha * (R(s,a) + gamma * Max(next id, all actions) - Q(s,a))
-//                        double value = q + alpha * (r + gamma * maxQ - q);
-//                        setQ(id, childId, value);
-//                    }
-//                }
-//            }
-//        }
     }
  
     //s is a Node. You will get and iterate over all its children to find the one
     //with the highest value.
     private double maxQ(String s) 
     {
-        String[] actionsFromState = Nodes.getNode(s).children;
+        Iterator<String> actionsFromState = Nodes.getNode(s).children.iterator();
         double maxValue = Double.MIN_VALUE;
-        for (int i = 0; i < actionsFromState.length; i++) 
+        while(actionsFromState.hasNext()) 
         {
-            String nextState = actionsFromState[i];
-            Double value = (Double) Nodes.getNode(s).getPolicy().get(nextState);
+            String nextState = actionsFromState.next();
+            Double value = Nodes.getNode(s).getPolicy().get(nextState);
  
-            if (value > maxValue)
-                maxValue = value;
+            if(value != null)
+                if (value > maxValue)
+                    maxValue = value;
         }
         return maxValue;
     }
@@ -142,13 +122,4 @@ public class QLearning {
     {
         return R.get(a);
     }
-    
-    /**
-     * Give each Node its new policy.
-     */
-//    public void applyPolicies()
-//    {
-//        for(String id : Nodes.keySet())
-//            Nodes.getNode(id).givePolicy(new THashMap(Q.get(id)));
-//    }
 }
