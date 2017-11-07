@@ -53,7 +53,7 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
      * @param states The method created by the process to see if 2 states are equal.
      * @return The Node with that state.
      */
-    public synchronized Node getNode(State state)
+    public Node getNode(State state)
     {
         Node node = getNode(DigestUtils.shaHex(state.toString()));
         if(node == null)
@@ -66,7 +66,7 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
      * @param id The id of the wanted Node. Cannot be null.
      * @return The Node with the given Id.
      */
-    public synchronized static Node getNode(String id)
+    public static Node getNode(String id)
     {
         return nodes.get(id);
     }
@@ -75,7 +75,7 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
      * Create a new Node with a unique Id and the given state.
      * @param state The state to give the new Node.
      */
-    private synchronized Node createNode(State state)
+    private Node createNode(State state)
     {
         //Give the Node a new incremented Id.
         String newId = DigestUtils.shaHex(state.toString());
@@ -155,12 +155,12 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
     }
 
     @Override
-    public synchronized Node load(String k) throws Exception {
+    public  Node load(String k) throws Exception {
         return cache.get(k);
     }
 
     @Override
-    public synchronized Map<String, Node> loadAll(Iterable<? extends String> itrbl) throws BulkCacheLoadingException, Exception {
+    public Map<String, Node> loadAll(Iterable<? extends String> itrbl) throws BulkCacheLoadingException, Exception {
         Map<String, Node> map = new THashMap();
         Iterator<? extends String> it = itrbl.iterator();
         while(it.hasNext())
@@ -172,12 +172,12 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
     }
 
     @Override
-    public synchronized void write(String k, Node v) throws Exception {
+    public void write(String k, Node v) throws Exception {
         cache.put(k, v);
     }
 
     @Override
-    public synchronized void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
+    public void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
         Iterator<? extends Map.Entry<? extends String, ? extends Node>> it = itrbl.iterator();
         while(it.hasNext())
         {
@@ -188,12 +188,12 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
     }
 
     @Override
-    public synchronized void delete(String k) throws Exception {
+    public void delete(String k) throws Exception {
         cache.remove(k);
     }
 
     @Override
-    public synchronized void deleteAll(Iterable<? extends String> itrbl) throws BulkCacheWritingException, Exception {
+    public void deleteAll(Iterable<? extends String> itrbl) throws BulkCacheWritingException, Exception {
         Iterator<? extends String> it = itrbl.iterator();
         while(it.hasNext())
             cache.remove(it.next());

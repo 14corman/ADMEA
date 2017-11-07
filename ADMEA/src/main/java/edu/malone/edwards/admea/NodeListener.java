@@ -20,7 +20,7 @@ import org.ehcache.event.CacheEventListener;
 public class NodeListener implements CacheEventListener<String, Node> {
 
     @Override
-    public synchronized void onEvent(CacheEvent<? extends String, ? extends Node> ce) {
+    public void onEvent(CacheEvent<? extends String, ? extends Node> ce) {
 //        System.out.println("Event fired: " + ce.getType());
         switch(ce.getType().toString())
         {
