@@ -27,15 +27,14 @@ public class NodeListener implements CacheEventListener<String, Node> {
             @Override
             public void run()
             {
-                Node node = ce.getNewValue();
         //        System.out.println("Event fired: " + ce.getType());
                 switch(ce.getType().toString())
                 {
                     case "EVICTED":
                     case "EXPIRED":
                         try {
-                            if(node != null)
-                                nodeList.delete(node.getNodeId());
+                            String key = ce.getKey();
+                            nodeList.delete(key);
                         } catch (Exception ex) {
                             Exceptions.printStackTrace(ex);
                         }
@@ -49,6 +48,7 @@ public class NodeListener implements CacheEventListener<String, Node> {
                         nodeList.n--;
                         break;
                     case "UPDATED":
+                        Node node = ce.getNewValue();
                         if(!qLearningBuffer.contains(node.getNodeId()))
                         {
                             System.out.println("IN UPDATED");

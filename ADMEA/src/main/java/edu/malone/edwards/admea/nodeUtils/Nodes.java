@@ -141,7 +141,7 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
 //        persistentCacheManager = cachingProvider.getCacheManager( 
 //            Utilities.toURI(new File("C:\\NSF\\GameOfLifeWebsite\\cache.xml")), 
 //            getClass().getClassLoader()); 
-        URL myUrl = Utilities.toURI(new File("C:\\NSF\\GameOfLifeWebsite\\cache.xml")).toURL(); 
+        URL myUrl = Utilities.toURI(new File("C:\\NSF Projects\\ADMEA\\cache.xml")).toURL(); 
         Configuration xmlConfig = new XmlConfiguration(myUrl);
         persistentCacheManager = (PersistentCacheManager) CacheManagerBuilder.newCacheManager(xmlConfig);
         persistentCacheManager.init();
