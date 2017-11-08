@@ -12,6 +12,7 @@ import edu.malone.edwards.admea.nodeUtils.Nodes;
 import java.util.LinkedList;
 import org.ehcache.event.CacheEvent;
 import org.ehcache.event.CacheEventListener;
+import org.openide.util.Exceptions;
 
 /**
  *
@@ -21,26 +22,42 @@ public class NodeListener implements CacheEventListener<String, Node> {
 
     @Override
     public void onEvent(CacheEvent<? extends String, ? extends Node> ce) {
-//        System.out.println("Event fired: " + ce.getType());
-        switch(ce.getType().toString())
+        new Thread()
         {
-            case "CREATED":
-//                System.out.println("IN CREATED");
-                nodeList.n++;
-                break;
-            case "REMOVED":
-                System.out.println("IN REMOVED");
-                nodeList.n--;
-                break;
-            case "UPDATED":
+            @Override
+            public void run()
+            {
                 Node node = ce.getNewValue();
-                if(!qLearningBuffer.contains(node.getNodeId()))
+        //        System.out.println("Event fired: " + ce.getType());
+                switch(ce.getType().toString())
                 {
-                    System.out.println("IN UPDATED");
-                    for(String parent : node.parents)
-                        Nodes.getNode(parent).update();
+                    case "EVICTED":
+                    case "EXPIRED":
+                        try {
+                            if(node != null)
+                                nodeList.delete(node.getNodeId());
+                        } catch (Exception ex) {
+                            Exceptions.printStackTrace(ex);
+                        }
+                        break;
+                    case "CREATED":
+        //                System.out.println("IN CREATED");
+                        nodeList.n++;
+                        break;
+                    case "REMOVED":
+                        System.out.println("IN REMOVED");
+                        nodeList.n--;
+                        break;
+                    case "UPDATED":
+                        if(!qLearningBuffer.contains(node.getNodeId()))
+                        {
+                            System.out.println("IN UPDATED");
+                            for(String parent : node.parents)
+                                Nodes.getNode(parent).update();
+                        }
+                        break;
                 }
-                break;
-        }
+            }
+        }.start();
     }
 }
