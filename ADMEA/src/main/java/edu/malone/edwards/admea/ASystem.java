@@ -59,7 +59,7 @@ public abstract class ASystem {
     
     private final Debugging debugger = new Debugging();
     
-    public static QlearningQueue qLearningBuffer = new QlearningQueue(1);
+    public static QlearningQueue qLearningBuffer = new QlearningQueue(2);
     public static ExecutorService qLearningQueue = Executors.newCachedThreadPool();
     
     /**
