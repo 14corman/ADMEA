@@ -59,8 +59,8 @@ public abstract class ASystem {
     
     private final Debugging debugger = new Debugging();
     
-    public static QlearningQueue qLearningBuffer = new QlearningQueue(10);
-    public static ExecutorService qLearningQueue = Executors.newFixedThreadPool(1);
+    public static QlearningQueue qLearningBuffer = new QlearningQueue(1);
+    public static ExecutorService qLearningQueue = Executors.newCachedThreadPool();
     
     /**
      * Determine which child to go to next from the root.

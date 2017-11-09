@@ -63,7 +63,7 @@ public class Node implements Serializable {
     /**
      * The score that Q learning will use to build a policy.
      */
-    private int score;
+    private  int score;
     
     /**
      * The state that this Node is a reference for.
@@ -75,7 +75,7 @@ public class Node implements Serializable {
      */
     private boolean isNew;
     
-    public String[] parents = new String[0];
+    public  String[] parents = new String[0];
     
     /**
      * Create a new Node for a new state.
@@ -90,7 +90,7 @@ public class Node implements Serializable {
         isNew = true;
     }
     
-    public void addParent(Node parent)
+    public synchronized void addParent(Node parent)
     {
         String[] temp = new String[parents.length + 1];
         System.arraycopy(parents, 0, temp, 0, parents.length);
