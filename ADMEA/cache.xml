@@ -30,8 +30,8 @@
 			</listener>
 		</listeners>
 		<resources>
-			<heap unit="entries">10000</heap> 
-			<offheap unit="MB">20</offheap> 
+			<heap unit="entries">20000</heap> 
+			<offheap unit="MB">50</offheap> 
 			<disk unit="GB" persistent="true">2</disk>
 		</resources>
 	</cache>

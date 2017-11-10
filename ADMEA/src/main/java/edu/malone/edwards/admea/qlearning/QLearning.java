@@ -48,7 +48,8 @@ public class QLearning implements Runnable {
     @Override
     public void run() 
     {   
-        qLearningBuffer.add(node.getNodeId());
+        if(!qLearningBuffer.contains(node.getNodeId()))
+            qLearningBuffer.add(node.getNodeId());
         if(!node.children.isEmpty())
         {
             debugger.println("Starting Q learning for node " + node.getNodeId() + ".");
