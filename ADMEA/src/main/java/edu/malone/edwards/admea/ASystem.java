@@ -11,6 +11,7 @@ import edu.malone.edwards.admea.nodeUtils.State;
 import edu.malone.edwards.admea.qlearning.QLearning;
 import edu.malone.edwards.admea.qlearning.QlearningQueue;
 import edu.malone.edwards.admea.utils.Debugging;
+import edu.malone.edwards.admea.utils.Stopwatch;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import java.net.MalformedURLException;
@@ -61,6 +62,9 @@ public abstract class ASystem {
     
     public static QlearningQueue qLearningBuffer = new QlearningQueue(2);
     public static ExecutorService qLearningQueue = Executors.newCachedThreadPool();
+    
+    private double oldTime = 0.0;
+    private double newTime = 0.0;
     
     /**
      * Determine which child to go to next from the root.
@@ -175,6 +179,9 @@ public abstract class ASystem {
      */
     public State performAction(State state)
     {
+        Stopwatch time = new Stopwatch();
+        oldTime = 0.0;
+        newTime = 0.0;
         debugger.println("Starting process.");
         
         //If it is null, the algorithm is just starting.
@@ -189,6 +196,8 @@ public abstract class ASystem {
             }
         }
         
+//        System.out.println("Add success done : " + getElapsed(time));
+        
         //This will get the Node with the given state, or make one and return it.
         Node root = nodeList.getNode(state);
         
@@ -202,26 +211,32 @@ public abstract class ASystem {
             
             //Create the new Node's children.
             root.children = setChildren(state);
+            Nodes.flushBuffer();
+//            System.out.println("Children created : " + getElapsed(time));
             
             //Check for loops and get rid of children that create the loop.
             root.children = nodeList.deleteLoops(root.children, root.getNodeId());
+//            System.out.println("Loops deleted: " + getElapsed(time));
             
             //Add the root Node as a parent to its children.
             for(String child : root.children)
             {
                 Nodes.getNode(child).addParent(root);
             }
+//            System.out.println("Parents added : " + getElapsed(time));
             
             debugger.println("Children created.");
             debugger.println("Calculating score.");
             
             //Set the new Node's score.
             root.setScore(calculateScore(state));
+//            System.out.println("Score set :" + getElapsed(time));
             
             debugger.println("Score calculated.");
             
             //Create policy for all Nodes and apply them.
-            qLearningQueue.submit(new QLearning(root));
+            new QLearning(root).run();
+//            System.out.println("Q learning running : " + getElapsed(time));
             
             debugger.println("Policies given.");
             
@@ -232,6 +247,7 @@ public abstract class ASystem {
         //Use the policy for the Node given the state along with combined 
         //binomial distributions to get the correct next Node's state to take.
         State nextState = getWinningPath(root.children);
+//        System.out.println("Winning state found : " + getElapsed(time));
         
         debugger.println("Next path found.");
         
@@ -243,6 +259,8 @@ public abstract class ASystem {
         Node nextNode = nodeList.getNode(nextState);
         nextNode.addOccurrence();
         
+//        System.out.println("Occurances added : " + getElapsed(time));
+        
         lastStepId = nextNode.getNodeId();
         
         debugger.println("Next Node Id: " + lastStepId);
@@ -252,13 +270,26 @@ public abstract class ASystem {
         
         //Update the Nodes' probabilities.
         updateProbabilities();
+//        System.out.println("Probabilities updated" + getElapsed(time));
         
         Nodes.saveNode(root);
         Nodes.saveNode(nextNode);
-        
-        
+//        
+//        System.out.println("Nodes saved : " + getElapsed(time));
+//        
+//        
+//        System.out.println("total time for move : " + time.elapsedTime());
+//        System.out.println();
+//        System.out.println();
         //Return the next state to take.
         return nextState;
+    }
+    
+    private double getElapsed(Stopwatch watch)
+    {
+        oldTime = newTime;
+        newTime = watch.elapsedTime();
+        return newTime - oldTime;
     }
     
     /**

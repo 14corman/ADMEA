@@ -12,7 +12,7 @@
 		<key-type>java.lang.String</key-type> 
 		<value-type>edu.malone.edwards.admea.nodeUtils.Node</value-type> 
 		<expiry>
-			<tti unit="seconds">30</tti>
+			<tti unit="seconds">15</tti>
 		</expiry>
 		<loader-writer>
 			<class>edu.malone.edwards.admea.nodeUtils.Nodes</class>

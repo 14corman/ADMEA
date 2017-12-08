@@ -23,7 +23,7 @@ public class QlearningQueue<E> extends LinkedList<E> {
     public boolean add(E object) {
         boolean add = super.add(object);
         while (size() > limit)
-            remove();
+            poll();
         return add;
     }
 }

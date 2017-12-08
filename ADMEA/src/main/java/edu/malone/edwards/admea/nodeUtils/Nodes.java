@@ -36,6 +36,7 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
     private PersistentCacheManager persistentCacheManager;
     private static Cache<String, Node> nodes;
     private THashMap<String, Node> cache = new THashMap();
+    private static Map<String, Node> nodeBuffer = new THashMap();
     public int n = 0;
     
     /**
@@ -82,7 +83,8 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
         Node node = new Node(state, newId);
         
         //Create the new Node and put it into the list.
-        nodes.put(newId, node);
+//        nodes.put(newId, node);
+        nodeBuffer.put(newId, node);
         
         //Return the new Node.
         return node;
@@ -91,6 +93,12 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
     public static void saveNode(Node node)
     {
         nodes.put(node.getNodeId(), node);
+    }
+    
+    public static void flushBuffer()
+    {
+        nodes.putAll(nodeBuffer);
+        nodeBuffer.clear();
     }
     
     /**
@@ -178,13 +186,8 @@ public class Nodes implements CacheLoaderWriter<String, Node>{
 
     @Override
     public void writeAll(Iterable<? extends Map.Entry<? extends String, ? extends Node>> itrbl) throws BulkCacheWritingException, Exception {
-        Iterator<? extends Map.Entry<? extends String, ? extends Node>> it = itrbl.iterator();
-        while(it.hasNext())
-        {
-            Entry<? extends String, ? extends Node> entry = 
-                    (Entry<? extends String, ? extends Node>) it.next();
+        for (Map.Entry<? extends String, ? extends Node> entry: itrbl)
             cache.put(entry.getKey(), entry.getValue());
-        }
     }
 
     @Override

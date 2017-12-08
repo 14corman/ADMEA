@@ -5,7 +5,11 @@ import edu.malone.edwards.admea.nodeUtils.Node;
 import edu.malone.edwards.admea.nodeUtils.Nodes;
 import edu.malone.edwards.admea.utils.Debugging;
 import gnu.trove.map.hash.THashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
  
 /**
  * created by: Kunuk Nykjaer &nbsp;&nbsp;&nbsp; website:
@@ -48,28 +52,30 @@ public class QLearning implements Runnable {
     @Override
     public void run() 
     {   
-        qLearningBuffer.add(node.getNodeId());
-        if(!node.children.isEmpty())
+        if(!node.children.isEmpty() && !qLearningBuffer.contains(node.getNodeId()))
         {
+            qLearningBuffer.add(node.getNodeId());
             debugger.println("Starting Q learning for node " + node.getNodeId() + ".");
             R = new THashMap(node.children.size(), .9f);
             Q = new THashMap(node.children.size(), .9f);
+            Map<String, Node> children = new HashMap();
 
             //Now go through and reset all of the possible children to an actual value.
             for(String childId : node.children)
             {
                 Node childNode = Nodes.getNode(childId);
+                children.put(childId, childNode);
                 R.put(childId, node.getScore() - childNode.getScore());
                 Q.put(childId, 0.0);
             }
 
-            for(int i =0; i < 300; i++)
+            for(int i = 0; i < 300; i++)
             {
                 for(String childId : node.children)
                 {
                     //Get all of the variables needed.
                     double q = Q(childId);
-                    double maxQ = maxQ(childId);
+                    double maxQ = maxQ(children.get(childId));
                     int r = R(childId);
 
                     // Q(s,a)= Q(s,a) + alpha * (R(s,a) + gamma * Max(next id, all actions) - Q(s,a))
@@ -86,15 +92,11 @@ public class QLearning implements Runnable {
  
     //s is a Node. You will get and iterate over all its children to find the one
     //with the highest value.
-    private double maxQ(String s) 
+    private double maxQ(Node actionsFromState) 
     {
-        Iterator<String> actionsFromState = Nodes.getNode(s).children.iterator();
         double maxValue = Double.MIN_VALUE;
-        while(actionsFromState.hasNext()) 
+        for(Double value : actionsFromState.getPolicy().values()) 
         {
-            String nextState = actionsFromState.next();
-            Double value = Nodes.getNode(s).getPolicy().get(nextState);
- 
             if(value != null)
                 if (value > maxValue)
                     maxValue = value;
