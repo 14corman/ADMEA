@@ -215,7 +215,7 @@ public abstract class ASystem {
 //            System.out.println("Children created : " + getElapsed(time));
             
             //Check for loops and get rid of children that create the loop.
-            root.children = nodeList.deleteLoops(root.children, root.getNodeId());
+//            root.children = nodeList.deleteLoops(root.children, root.getNodeId());
 //            System.out.println("Loops deleted: " + getElapsed(time));
             
             //Add the root Node as a parent to its children.
@@ -311,6 +311,7 @@ public abstract class ASystem {
     
     /**
      * Start up the algorithm so it can load Nodes from storage.
+     * @throws java.net.MalformedURLException
      */
     public void init() throws MalformedURLException
     {
@@ -320,6 +321,7 @@ public abstract class ASystem {
     /**
      * Sha-1 hash the state to get its id.
      * @param state The state to hash
+     * @return 
      */
     public String hashState(State state)
     {
