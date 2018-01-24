@@ -61,17 +61,17 @@ public class QLearning implements Runnable {
             Map<String, Node> children = new HashMap();
 
             //Now go through and reset all of the possible children to an actual value.
-            for(String childId : node.children)
+            node.children.forEach((childId) -> 
             {
                 Node childNode = Nodes.getNode(childId);
                 children.put(childId, childNode);
                 R.put(childId, node.getScore() - childNode.getScore());
                 Q.put(childId, 0.0);
-            }
-
+            });
+            
             for(int i = 0; i < 300; i++)
             {
-                for(String childId : node.children)
+                node.children.forEach((childId) -> 
                 {
                     //Get all of the variables needed.
                     double q = Q(childId);
@@ -81,7 +81,7 @@ public class QLearning implements Runnable {
                     // Q(s,a)= Q(s,a) + alpha * (R(s,a) + gamma * Max(next id, all actions) - Q(s,a))
                     double value = q + alpha * (r + gamma * maxQ - q);
                     setQ(childId, value);
-                }
+                });
             }
 
             node.givePolicy(Q);
