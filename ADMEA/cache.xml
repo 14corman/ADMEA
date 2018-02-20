@@ -1,18 +1,10 @@
-<config 
-	xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' 
-	xmlns='http://www.ehcache.org/v3'
-	xmlns:jsr107='http://www.ehcache.org/v3/jsr107'
-	xsi:schemaLocation="
-		http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core.xsd
-		http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
-
+<config xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns='http://www.ehcache.org/v3' xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core.xsd">
 	<persistence directory="TempNodeStore" />
-	
 	<cache alias="default"> 
 		<key-type>java.lang.String</key-type> 
 		<value-type>edu.malone.edwards.admea.nodeUtils.Node</value-type> 
 		<expiry>
-			<tti unit="seconds">15</tti>
+			<ttl unit="seconds">2</ttl>
 		</expiry>
 		<loader-writer>
 			<class>edu.malone.edwards.admea.nodeUtils.Nodes</class>
@@ -30,9 +22,9 @@
 			</listener>
 		</listeners>
 		<resources>
-			<heap unit="entries">20000</heap> 
+			<heap unit="entries">1000</heap> 
 			<offheap unit="MB">50</offheap> 
-			<disk unit="GB" persistent="true">2</disk>
+			<disk unit="GB" persistent="true">15</disk>
 		</resources>
 	</cache>
 </config>

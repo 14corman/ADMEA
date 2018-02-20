@@ -5,7 +5,11 @@
  */
 package edu.malone.edwards.admea.utils;
 
-import edu.malone.edwards.admea.ASystem;
+import edu.malone.edwards.admea.ehache.ASystem;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import org.openide.util.Exceptions;
 
 /**
  *  Will print out Debugging information if DEBUG is set to true in ASystem.
@@ -31,5 +35,22 @@ public class Debugging {
     {
         if(ASystem.DEBUG)
             System.out.println(string);
+    }
+    
+    public void addTiming(double time, boolean newLine)
+    {
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter("R:\\GameofLife\\timing results.csv", true)))
+        {
+            bw.write(Double.toString(time));
+            if(newLine)
+                bw.newLine();
+            else
+                bw.write(",");
+
+        } 
+        catch (IOException ex) 
+        {
+            Exceptions.printStackTrace(ex);
+        }
     }
 }
