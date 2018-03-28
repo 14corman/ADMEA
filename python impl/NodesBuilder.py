@@ -5,6 +5,7 @@ Created on Sat Mar 10 20:39:17 2018
 @author: Cory
 """
 from functools import lru_cache
+from Nodes import getNode
 
 	
 class Nodes:
@@ -22,8 +23,11 @@ class Nodes:
 		    return 'get node by state here'
 	
     def saveNode(self, node):
-	     """Go through and write this node out to memory, clear it from cache, and call its parents to update."""
-	     return node.id
+        """Go through and write this node out to memory, clear it from cache, and call its parents to update."""
+        getNode.cache_clear()
+        for parent in node.parents:
+            parent.update()
+        return node.id
 
     def getNodes(self):
         return self.nodes

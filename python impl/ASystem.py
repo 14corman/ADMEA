@@ -5,8 +5,8 @@ Created on Sat Mar 10 20:39:17 2018
 @author: Cory Edwards
 """
 import BeamSearch as bs
-from NodesBuilder import Nodes
-from NodeBuilder import Node
+import NodesBuilder as Nodes
+import NodeBuilder as Node
 import QLearning as ql
 
 class ASystem(object):

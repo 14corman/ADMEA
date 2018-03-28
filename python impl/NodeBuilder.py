@@ -9,7 +9,7 @@ from scipy.stats import binom
 class Node:
    """A Node in the system"""
 	
-   def __init__(self, p = 1.0, id = 0, state = '', score = 0.0):
+   def __init__(self, p = 1.0, id = 0, state = '', score = None):
 	    """Create a new Node with p, id, state, and score."""
 	    self.p = p
 	    self.n = 0
